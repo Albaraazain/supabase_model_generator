@@ -3,7 +3,6 @@ import 'package:dart_style/dart_style.dart';
 import 'package:built_collection/built_collection.dart';
 
 import '../models/table_definition.dart';
-import '../models/column_definition.dart';
 
 class RepositoryGenerator {
   final DartFormatter _formatter = DartFormatter();
