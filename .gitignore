@@ -9,3 +9,4 @@ pubspec.lock
 .history/
 supabase_flutter_app/
 output/
+example/
