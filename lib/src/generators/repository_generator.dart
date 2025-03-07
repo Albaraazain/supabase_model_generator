@@ -10,9 +10,9 @@ class RepositoryGenerator {
 
   String generateRepository(TableDefinition table) {
     final className = '${table.className}Repository';
-    final modelName = table.className;
-    final tableName = table.name;
-
+    final columns = table.columns;
+    
+    final buffer = StringBuffer();
     final classBuilder = ClassBuilder()..name = className;
 
     // Add docs
