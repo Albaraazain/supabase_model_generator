@@ -1,0 +1,11 @@
+# Supabase database configuration
+database:
+  host: 'localhost'
+  port: 54322
+  name: 'postgres'
+  username: 'postgres'
+  password: 'postgres'
+  use_ssl: false
+
+# Tables to include in generation (leave empty to include all tables)
+tables:
