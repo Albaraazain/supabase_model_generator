@@ -1,66 +1,31 @@
 import 'package:code_builder/code_builder.dart';
-import 'package:dart_style/dart_style.dart';
-import 'package:built_collection/built_collection.dart';
-
 import '../models/table_definition.dart';
-import '../models/column_definition.dart';
+import '../utils/string_extensions.dart';
 
 class RepositoryGenerator {
-  final DartFormatter _formatter = DartFormatter();
-
   String generateRepository(TableDefinition table) {
-    final className = '${table.className}Repository';
-    final modelName = table.className;
-    final tableName = table.name;
-
-    final classBuilder = ClassBuilder()..name = className;
-
-    // Add docs
-    classBuilder.docs =
-        ListBuilder<String>(['/// Repository for the ${table.name} table.']);
-
-    // Add fields
-    classBuilder.fields.add(Field((b) => b
-      ..name = '_supabase'
-      ..type = Reference('SupabaseClient')
-      ..modifier = FieldModifier.final$));
-
-    // Add constructor with initialization
-    classBuilder.constructors.add(Constructor((b) => b
-      ..requiredParameters.add(Parameter((b) => b
-        ..name = '_supabase'
-        ..type = Reference('SupabaseClient')))
-      ..initializers.add(Code('_supabase = _supabase'))));
-
-    // Add methods
-    classBuilder.methods.add(_buildGetAllMethod(table));
-    classBuilder.methods.add(_buildGetByIdMethod(table));
-    classBuilder.methods.add(_buildInsertMethod(table));
-    classBuilder.methods.add(_buildUpdateMethod(table));
-    classBuilder.methods.add(_buildDeleteMethod(table));
-    classBuilder.methods.add(_buildStreamMethod(table));
-
-    final emitter = DartEmitter();
-    final libraryBuilder = LibraryBuilder();
-
-    // Add imports
-    libraryBuilder.directives.add(
-        Directive.import('package:supabase_flutter/supabase_flutter.dart'));
-    libraryBuilder.directives
-        .add(Directive.import('../models/${table.name}.dart'));
-
-    libraryBuilder.body.add(classBuilder.build());
-
-    return _formatter.format('${libraryBuilder.build().accept(emitter)}');
+    final className = '${table.name.pascalCase}Repository';
+    final modelClassName = '${table.name.pascalCase}Model';
+    
+    return '''
+      class $className {
+        final supabase = Supabase.instance.client;
+        
+        Future<List<$modelClassName>> findAll() async {
+          final response = await supabase.from('${table.name}').select();
+          return response.map((json) => $modelClassName.fromJson(json)).toList();
+        }
+      }
+    ''';
   }
 
   Method _buildGetAllMethod(TableDefinition table) {
-    final modelName = table.className;
+    final modelClassName = '${table.name.pascalCase}Model';
     final tableName = table.name;
 
     return Method((b) => b
       ..name = 'getAll'
-      ..returns = Reference('Future<List<$modelName>>')
+      ..returns = Reference('Future<List<$modelClassName>>')
       ..modifier = MethodModifier.async
       ..body = Code('''
         try {
@@ -68,8 +33,7 @@ class RepositoryGenerator {
               .from('$tableName')
               .select();
               
-          final data = response as List<dynamic>;
-          return data.map((json) => $modelName.fromJson(json as Map<String, dynamic>)).toList();
+          return response.map((json) => $modelClassName.fromJson(json)).toList();
         } catch (e) {
           throw Exception('Failed to fetch data: \${e.toString()}');
         }
@@ -77,7 +41,7 @@ class RepositoryGenerator {
   }
 
   Method _buildGetByIdMethod(TableDefinition table) {
-    final modelName = table.className;
+    final modelClassName = '${table.name.pascalCase}Model';
     final tableName = table.name;
 
     // Find primary key column
@@ -92,7 +56,7 @@ class RepositoryGenerator {
 
     return Method((b) => b
       ..name = 'getById'
-      ..returns = Reference('Future<$modelName?>')
+      ..returns = Reference('Future<$modelClassName?>')
       ..requiredParameters.add(Parameter((b) => b
         ..name = 'id'
         ..type = Reference(pkType)))
@@ -106,7 +70,7 @@ class RepositoryGenerator {
               .maybeSingle();
 
           if (response == null) return null;
-          return $modelName.fromJson(response as Map<String, dynamic>);
+          return $modelClassName.fromJson(response as Map<String, dynamic>);
         } catch (e) {
           throw Exception('Failed to fetch data: \${e.toString()}');
         }
@@ -114,15 +78,15 @@ class RepositoryGenerator {
   }
 
   Method _buildInsertMethod(TableDefinition table) {
-    final modelName = table.className;
+    final modelClassName = '${table.name.pascalCase}Model';
     final tableName = table.name;
 
     return Method((b) => b
       ..name = 'insert'
-      ..returns = Reference('Future<$modelName>')
+      ..returns = Reference('Future<$modelClassName>')
       ..requiredParameters.add(Parameter((b) => b
         ..name = 'model'
-        ..type = Reference(modelName)))
+        ..type = Reference(modelClassName)))
       ..modifier = MethodModifier.async
       ..body = Code('''
         try {
@@ -132,7 +96,7 @@ class RepositoryGenerator {
               .select()
               .single();
               
-          return $modelName.fromJson(response as Map<String, dynamic>);
+          return $modelClassName.fromJson(response as Map<String, dynamic>);
         } catch (e) {
           throw Exception('Failed to insert data: \${e.toString()}');
         }
@@ -140,7 +104,7 @@ class RepositoryGenerator {
   }
 
   Method _buildUpdateMethod(TableDefinition table) {
-    final modelName = table.className;
+    final modelClassName = '${table.name.pascalCase}Model';
     final tableName = table.name;
 
     // Find primary key column
@@ -155,10 +119,10 @@ class RepositoryGenerator {
 
     return Method((b) => b
       ..name = 'update'
-      ..returns = Reference('Future<$modelName>')
+      ..returns = Reference('Future<$modelClassName>')
       ..requiredParameters.add(Parameter((b) => b
         ..name = 'model'
-        ..type = Reference(modelName)))
+        ..type = Reference(modelClassName)))
       ..modifier = MethodModifier.async
       ..body = Code('''
         try {
@@ -169,7 +133,7 @@ class RepositoryGenerator {
               .select()
               .single();
               
-          return $modelName.fromJson(response as Map<String, dynamic>);
+          return $modelClassName.fromJson(response as Map<String, dynamic>);
         } catch (e) {
           throw Exception('Failed to update data: \${e.toString()}');
         }
@@ -209,7 +173,7 @@ class RepositoryGenerator {
   }
 
   Method _buildStreamMethod(TableDefinition table) {
-    final modelName = table.className;
+    final modelClassName = '${table.name.pascalCase}Model';
     final tableName = table.name;
 
     // Find primary key column
@@ -220,14 +184,14 @@ class RepositoryGenerator {
 
     return Method((b) => b
       ..name = 'stream'
-      ..returns = Reference('Stream<List<$modelName>>')
+      ..returns = Reference('Stream<List<$modelClassName>>')
       ..body = Code('''
         try {
           return _supabase
               .from('$tableName')
               .stream(primaryKey: ['${pkColumn.name}'])
               .map((list) => list
-                  .map((json) => $modelName.fromJson(json as Map<String, dynamic>))
+                  .map((json) => $modelClassName.fromJson(json as Map<String, dynamic>))
                   .toList());
         } catch (e) {
           throw Exception('Failed to stream data: \${e.toString()}');
