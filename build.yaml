@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      supabase_model_generator|supabase_model_generator:
+        enabled: true
+
+builders:
+  supabase_model_generator:
+    import: "package:supabase_model_generator/builder.dart"
+    builder_factories: ["supabseModelBuilder"]
+    build_extensions: {".dart": [".model.dart", ".repository.dart"]}
+    auto_apply: dependents
+    build_to: source
+    runs_before: ["json_serializable|json_serializable"]
