@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:build/build.dart';
 import 'package:postgres/postgres.dart';
 import 'package:supabase_model_generator/src/generators/enum_generator.dart';
